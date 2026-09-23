@@ -1,0 +1,183 @@
+/* Customer Segmentation E-Commerce Custom Styling */
+:root {
+    --brand-primary: #29BAD9;
+    --brand-primary-hover: #1FA3C0;
+    --brand-primary-light: #EAF9FC;
+    --brand-bg-soft: #F3FCFD;
+    --brand-dark: #164E5A;
+    --brand-dark-muted: #2C6D7C;
+    --brand-card-bg: #FFFFFF;
+    --brand-border: #D1EFF5;
+}
+
+body {
+    background-color: var(--brand-bg-soft);
+    color: var(--brand-dark);
+    font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Navbar */
+.navbar-custom {
+    background: linear-gradient(135deg, #164E5A 0%, #1c5e6d 100%);
+    box-shadow: 0 4px 15px rgba(22, 78, 90, 0.15);
+    padding: 0.8rem 1rem;
+}
+
+.navbar-brand-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    color: #FFFFFF !important;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.navbar-brand-badge {
+    background-color: var(--brand-primary);
+    color: #FFFFFF;
+    font-size: 0.72rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.nav-link-custom {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 0.5rem 1rem !important;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.nav-link-custom:hover, .nav-link-custom.active {
+    color: #FFFFFF !important;
+    background-color: rgba(41, 186, 217, 0.25);
+}
+
+/* Buttons */
+.btn-primary-custom {
+    background-color: var(--brand-primary);
+    border-color: var(--brand-primary);
+    color: #FFFFFF;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-primary-custom:hover, .btn-primary-custom:focus {
+    background-color: var(--brand-primary-hover);
+    border-color: var(--brand-primary-hover);
+    color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(41, 186, 217, 0.35);
+}
+
+.btn-outline-custom {
+    border: 2px solid var(--brand-primary);
+    color: var(--brand-dark);
+    font-weight: 600;
+    border-radius: 8px;
+    background: transparent;
+}
+
+.btn-outline-custom:hover {
+    background-color: var(--brand-primary);
+    color: #FFFFFF;
+}
+
+/* Cards */
+.card-custom {
+    background: #FFFFFF;
+    border: 1px solid var(--brand-border);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(22, 78, 90, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-custom:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(22, 78, 90, 0.1);
+}
+
+/* Hero Section */
+.hero-banner {
+    background: linear-gradient(135deg, var(--brand-primary-light) 0%, #d4f4fa 100%);
+    border: 1px solid var(--brand-border);
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+    margin-bottom: 2rem;
+}
+
+/* Product Cards */
+.product-card-img {
+    height: 220px;
+    object-fit: cover;
+    border-top-left-radius: 11px;
+    border-top-right-radius: 11px;
+}
+
+.product-price {
+    color: #164E5A;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+/* Badges */
+.badge-high-value {
+    background-color: #10B981;
+    color: #FFFFFF;
+}
+.badge-regular {
+    background-color: #0EA5E9;
+    color: #FFFFFF;
+}
+.badge-new {
+    background-color: #6366F1;
+    color: #FFFFFF;
+}
+.badge-at-risk {
+    background-color: #EF4444;
+    color: #FFFFFF;
+}
+.badge-discount-seeker {
+    background-color: #F59E0B;
+    color: #FFFFFF;
+}
+
+/* Live Active Pulse */
+.pulse-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #10B981;
+    box-shadow: 0 0 0 rgba(16, 185, 129, 0.4);
+    animation: pulse 1.8s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* Tables */
+.table-custom th {
+    background-color: var(--brand-primary-light);
+    color: var(--brand-dark);
+    font-weight: 700;
+}
+
+/* Footer */
+footer {
+    margin-top: auto;
+    background-color: #164E5A;
+    color: #EAF9FC;
+    padding: 1.5rem 0;
+}

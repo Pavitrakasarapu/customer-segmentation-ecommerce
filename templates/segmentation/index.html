@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}CUSTOMER SEGMENTATION - Live Multi-User Analytics{% endblock %}
+
+{% block content %}
+<!-- Main Application Branding / Heading -->
+<div class="hero-banner text-center py-4 mb-4">
+    <div class="d-inline-flex align-items-center gap-2 mb-2">
+        <span class="pulse-indicator"></span>
+        <span class="badge bg-white text-info border fw-bold text-uppercase px-3 py-1">Real-Time Machine Learning System</span>
+    </div>
+    <h1 class="display-5 fw-bold text-dark mb-2">CUSTOMER SEGMENTATION</h1>
+    <p class="lead text-muted fs-6 mb-0 max-w-700 mx-auto">
+        Live behavioral clustering powered by K-Means & RFM modeling. Watch real-time customer presence and dynamic segment transitions as users browse and shop.
+    </p>
+</div>
+
+<!-- Active Customers Live Board -->
+<div class="card card-custom p-4 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-3 mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <span class="pulse-indicator"></span>
+            <h4 class="fw-bold text-dark mb-0">LIVE ACTIVE CUSTOMERS</h4>
+        </div>
+        <div>
+            <span class="badge bg-info text-dark px-3 py-2 fs-6">
+                <span id="active-customers-count">{{ active_count }}</span> CUSTOMERS ACTIVE
+            </span>
+        </div>
+    </div>
+
+    <!-- Privacy Notice -->
+    <div class="alert alert-light border small text-muted d-flex align-items-center gap-2 mb-4 py-2">
+        <i class="bi bi-shield-lock-fill text-success fs-5"></i>
+        <span>
+            <strong>Customer Privacy Guaranteed:</strong> Active peers are displayed with their public Name and Current Segment only. Private emails, phone numbers, cart items, order history, and spending data remain strictly confidential.
+        </span>
+    </div>
+
+    <!-- Active Customers Dynamic Grid (Updated via Real-time Polling) -->
+    <div class="row g-3" id="active-customers-list">
+        {% for cust in active_customers %}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card card-custom h-100 p-3 border-start border-4 {% if cust.is_current_user %}border-primary{% else %}border-info{% endif %}">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="pulse-indicator"></span>
+                            <h6 class="mb-0 fw-bold text-dark">
+                                {{ cust.name }}
+                                {% if cust.is_current_user %}
+                                <span class="badge bg-secondary ms-1">You</span>
+                                {% endif %}
+                            </h6>
+                        </div>
+                        <span class="badge {% if cust.segment_label == 'HIGH VALUE CUSTOMER' %}badge-high-value{% elif cust.segment_label == 'REGULAR CUSTOMER' %}badge-regular{% elif cust.segment_label == 'NEW CUSTOMER' %}badge-new{% elif cust.segment_label == 'AT-RISK CUSTOMER' %}badge-at-risk{% else %}badge-discount-seeker{% endif %} text-uppercase px-2 py-1 mt-1">
+                            {{ cust.segment_label }}
+                        </span>
+                    </div>
+                    <div class="text-end text-muted small">
+                        <span class="badge bg-light text-dark border">
+                            <i class="bi bi-broadcast text-success me-1"></i> Active
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center py-4 text-muted">
+            <i class="bi bi-people fs-2 d-block mb-2"></i>
+            No active customers right now.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- My Current Segment Summary & Personalized Recommendations -->
+<div class="row g-4">
+    <!-- My Quick Segment Card -->
+    <div class="col-lg-5">
+        <div class="card card-custom p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0">Your Segment Profile</h5>
+                <span class="badge bg-{{ my_segment.badge_color }} text-uppercase px-3 py-1">
+                    {{ my_segment.segment_label }}
+                </span>
+            </div>
+            
+            <p class="text-muted small mb-3">
+                {{ my_segment.explanation }}
+            </p>
+
+            <ul class="list-group list-group-flush small mb-4">
+                <li class="list-group-item px-0 d-flex justify-content-between">
+                    <span class="text-muted">Total Orders Placed:</span>
+                    <strong class="text-dark">{{ my_segment.frequency }} orders</strong>
+                </li>
+                <li class="list-group-item px-0 d-flex justify-content-between">
+                    <span class="text-muted">Total Order Spend:</span>
+                    <strong class="text-dark">₹{{ "%.2f"|format(my_segment.monetary) }}</strong>
+                </li>
+                <li class="list-group-item px-0 d-flex justify-content-between">
+                    <span class="text-muted">Product Browsing Activity:</span>
+                    <strong class="text-dark">{{ my_segment.product_views }} views</strong>
+                </li>
+                <li class="list-group-item px-0 d-flex justify-content-between">
+                    <span class="text-muted">Cart Additions:</span>
+                    <strong class="text-dark">{{ my_segment.cart_additions }} times</strong>
+                </li>
+            </ul>
+
+            <a href="{{ url_for('segmentation.my_segment') }}" class="btn btn-primary-custom w-100 mt-auto py-2">
+                <i class="bi bi-graph-up me-1"></i> Open Full Behavioral Analytics
+            </a>
+        </div>
+    </div>
+
+    <!-- Personalized Product Recommendations Based on Segment -->
+    <div class="col-lg-7">
+        <div class="card card-custom p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-stars text-warning me-1"></i> Recommended For You
+                </h5>
+                <small class="text-muted">Curated for {{ my_segment.segment_label }}</small>
+            </div>
+
+            <div class="row g-3">
+                {% for prod in recommendations %}
+                <div class="col-sm-6">
+                    <div class="card border rounded-3 p-2 h-100 d-flex flex-column">
+                        <div class="d-flex gap-2 align-items-center mb-2">
+                            <img src="{{ prod.image_url }}" alt="{{ prod.name }}" class="rounded" style="width: 50px; height: 50px; object-fit: cover;" onerror="this.src='https://placehold.co/100x100/eaf9fc/164e5a?text=Item'">
+                            <div>
+                                <h6 class="mb-0 fw-bold text-dark small text-truncate" style="max-width: 170px;">{{ prod.name }}</h6>
+                                <small class="text-muted">₹{{ "%.2f"|format(prod.price) }}</small>
+                            </div>
+                        </div>
+                        <div class="mt-auto d-flex justify-content-between align-items-center pt-2 border-top">
+                            <a href="{{ url_for('shop.product_detail', product_id=prod.id) }}" class="btn btn-sm btn-outline-custom py-0 px-2 small">View</a>
+                            <form method="POST" action="{{ url_for('shop.add_to_cart', product_id=prod.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-primary-custom py-0 px-2 small">
+                                    <i class="bi bi-cart-plus"></i> Add
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

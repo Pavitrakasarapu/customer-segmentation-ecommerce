@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}CUSTOMER SEGMENTATION{% endblock %} | Mini E-Commerce</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Main Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top">
+        <div class="container">
+            <!-- Brand Heading -->
+            <a class="navbar-brand navbar-brand-title" href="{{ url_for('shop.index') if current_user.is_authenticated and not current_user.is_admin else (url_for('admin.dashboard') if current_user.is_authenticated else url_for('auth.login')) }}">
+                <i class="bi bi-diagram-3-fill text-info"></i>
+                <span>CUSTOMER SEGMENTATION</span>
+                <span class="navbar-brand-badge">DEMO</span>
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    {% if current_user.is_authenticated and not current_user.is_admin %}
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom {% if request.endpoint and request.endpoint.startswith('shop') %}active{% endif %}" href="{{ url_for('shop.index') }}">
+                            <i class="bi bi-bag-check me-1"></i> SHOPPING
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom {% if request.endpoint and request.endpoint.startswith('segmentation') %}active{% endif %}" href="{{ url_for('segmentation.index') }}">
+                            <i class="bi bi-pie-chart me-1"></i> CUSTOMER SEGMENTATION
+                        </a>
+                    </li>
+                    {% elif current_user.is_authenticated and current_user.is_admin %}
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">
+                            <i class="bi bi-speedometer2 me-1"></i> ADMIN DASHBOARD
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom {% if request.endpoint == 'admin.customers' %}active{% endif %}" href="{{ url_for('admin.customers') }}">
+                            <i class="bi bi-people me-1"></i> CUSTOMERS
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom {% if request.endpoint == 'admin.activities' %}active{% endif %}" href="{{ url_for('admin.activities') }}">
+                            <i class="bi bi-journal-text me-1"></i> ACTIVITY LOGS
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+
+                <!-- Right Menu: Wishlist, Cart & Profile -->
+                <ul class="navbar-nav align-items-center gap-2">
+                    {% if current_user.is_authenticated %}
+                        {% if not current_user.is_admin %}
+                        <li class="nav-item">
+                            <a class="btn btn-sm btn-outline-light position-relative" href="{{ url_for('shop.wishlist') }}" title="Wishlist">
+                                <i class="bi bi-heart-fill text-danger"></i>
+                                {% if wishlist_count > 0 %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    {{ wishlist_count }}
+                                </span>
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li class="nav-item me-2">
+                            <a class="btn btn-sm btn-outline-light position-relative" href="{{ url_for('shop.cart') }}" title="Shopping Cart">
+                                <i class="bi bi-cart3"></i>
+                                {% if cart_count > 0 %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-info text-dark">
+                                    {{ cart_count }}
+                                </span>
+                                {% endif %}
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        <!-- Profile Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-white d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle fs-5"></i>
+                                <span class="fw-semibold">{{ current_user.name }}</span>
+                                {% if current_user.is_admin %}
+                                <span class="badge bg-warning text-dark ms-1">ADMIN</span>
+                                {% endif %}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                {% if not current_user.is_admin %}
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('shop.profile') }}">
+                                        <i class="bi bi-person me-2"></i> Profile
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('segmentation.my_segment') }}">
+                                        <i class="bi bi-graph-up-arrow me-2 text-primary"></i> My Segment Stats
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('shop.wishlist') }}">
+                                        <i class="bi bi-heart me-2 text-danger"></i> Wishlist
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('shop.cart') }}">
+                                        <i class="bi bi-cart me-2 text-info"></i> Cart
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('shop.orders') }}">
+                                        <i class="bi bi-box-seam me-2 text-success"></i> My Orders
+                                    </a>
+                                </li>
+                                {% else %}
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('admin.dashboard') }}">
+                                        <i class="bi bi-speedometer2 me-2"></i> Admin Dashboard
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('admin.customers') }}">
+                                        <i class="bi bi-people me-2"></i> Customer Directory
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('admin.activities') }}">
+                                        <i class="bi bi-clock-history me-2"></i> Activity Logs
+                                    </a>
+                                </li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+                                        <i class="bi bi-box-arrow-right me-2"></i> Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link text-white fw-semibold" href="{{ url_for('auth.login') }}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-sm btn-primary-custom" href="{{ url_for('auth.register') }}">Register</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages Container -->
+    <div class="container mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show shadow-sm" role="alert">
+                        <i class="bi {% if category == 'success' %}bi-check-circle-fill{% elif category == 'danger' %}bi-exclamation-octagon-fill{% else %}bi-info-circle-fill{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Page Content Block -->
+    <main class="container my-4 flex-grow-1">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Modern Footer -->
+    <footer>
+        <div class="container text-center">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-md-start mb-2 mb-md-0">
+                    <span class="fw-bold fs-6">CUSTOMER SEGMENTATION</span>
+                    <small class="text-white-50 d-block">Real-Time Machine Learning Behavioral Analytics</small>
+                </div>
+                <div class="col-md-6 text-md-end text-white-50 small">
+                    <span>&copy; {{ current_year }} Mini Shopping Demo &bull; Python & Flask &bull; Scikit-learn KMeans</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

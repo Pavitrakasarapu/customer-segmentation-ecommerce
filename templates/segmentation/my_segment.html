@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}My Behavioral Segmentation - Customer Segmentation{% endblock %}
+
+{% block content %}
+<div class="my-3">
+    <!-- Header with Segment Badge -->
+    <div class="card card-custom p-4 mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <span class="badge bg-light text-info border px-3 py-1 mb-2">PERSONAL BEHAVIORAL PROFILE</span>
+                <h2 class="fw-bold text-dark mb-0">{{ current_user.name }}</h2>
+                <small class="text-muted">Behavioral profile updated in real-time on every transaction</small>
+            </div>
+            <div class="text-md-end">
+                <span class="badge bg-{{ seg.badge_color }} text-uppercase px-3 py-2 fs-5">
+                    {{ seg.segment_label }}
+                </span>
+                <small class="text-muted d-block mt-1">Cluster ID: #{{ seg.cluster_id }}</small>
+            </div>
+        </div>
+
+        <!-- Plain English Explanation -->
+        <div class="alert alert-light border mt-4 mb-0">
+            <h6 class="fw-bold text-dark mb-1">
+                <i class="bi bi-lightbulb-fill text-warning me-2"></i> Why are you in this segment?
+            </h6>
+            <p class="mb-0 text-muted">
+                {{ seg.explanation }}
+            </p>
+        </div>
+    </div>
+
+    <!-- RFM & Behavioral Metrics Grid -->
+    <div class="row g-3 mb-4 text-center">
+        <!-- Frequency -->
+        <div class="col-sm-6 col-md-3">
+            <div class="card card-custom p-3 h-100">
+                <i class="bi bi-bag-check fs-2 text-info mb-1"></i>
+                <small class="text-muted text-uppercase fw-bold">Total Orders (F)</small>
+                <h3 class="fw-bold text-dark mb-1">{{ seg.frequency }}</h3>
+                <small class="text-muted">{{ purchase_freq }}</small>
+            </div>
+        </div>
+
+        <!-- Monetary -->
+        <div class="col-sm-6 col-md-3">
+            <div class="card card-custom p-3 h-100">
+                <i class="bi bi-cash-coin fs-2 text-success mb-1"></i>
+                <small class="text-muted text-uppercase fw-bold">Total Spend (M)</small>
+                <h3 class="fw-bold text-dark mb-1">₹{{ "%.2f"|format(seg.monetary) }}</h3>
+                <small class="text-muted">{{ spending_level }}</small>
+            </div>
+        </div>
+
+        <!-- Average Order Value -->
+        <div class="col-sm-6 col-md-3">
+            <div class="card card-custom p-3 h-100">
+                <i class="bi bi-graph-up-arrow fs-2 text-primary mb-1"></i>
+                <small class="text-muted text-uppercase fw-bold">Avg Order Value</small>
+                <h3 class="fw-bold text-dark mb-1">₹{{ "%.2f"|format(seg.avg_order_value) }}</h3>
+                <small class="text-muted">Per completed order</small>
+            </div>
+        </div>
+
+        <!-- Recency -->
+        <div class="col-sm-6 col-md-3">
+            <div class="card card-custom p-3 h-100">
+                <i class="bi bi-calendar-check fs-2 text-danger mb-1"></i>
+                <small class="text-muted text-uppercase fw-bold">Recency (R)</small>
+                <h3 class="fw-bold text-dark mb-1">{{ "%.1f"|format(seg.recency_days) }}d</h3>
+                <small class="text-muted">
+                    {% if last_order %}Last order: {{ last_order.created_at.strftime('%b %d') }}{% else %}Since account start{% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Engagement & Browsing Statistics -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card card-custom p-4 h-100">
+                <h5 class="fw-bold text-dark mb-3">Store Engagement Metrics</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-eye text-info me-2"></i>
+                            <span class="text-dark">Products Viewed</span>
+                        </div>
+                        <span class="badge bg-light text-dark border fs-6">{{ seg.product_views }}</span>
+                    </li>
+                    <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-search text-info me-2"></i>
+                            <span class="text-dark">Search Queries Made</span>
+                        </div>
+                        <span class="badge bg-light text-dark border fs-6">{{ seg.searches }}</span>
+                    </li>
+                    <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-heart text-danger me-2"></i>
+                            <span class="text-dark">Wishlist Additions</span>
+                        </div>
+                        <span class="badge bg-light text-dark border fs-6">{{ seg.wishlist_count }}</span>
+                    </li>
+                    <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-cart-plus text-primary me-2"></i>
+                            <span class="text-dark">Cart Additions</span>
+                        </div>
+                        <span class="badge bg-light text-dark border fs-6">{{ seg.cart_additions }}</span>
+                    </li>
+                    <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-tags text-success me-2"></i>
+                            <span class="text-dark">Unique Categories Purchased</span>
+                        </div>
+                        <span class="badge bg-light text-dark border fs-6">{{ seg.categories_bought }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card card-custom p-4 h-100">
+                <h5 class="fw-bold text-dark mb-3">Personalized Suggestions</h5>
+                <p class="text-muted small">Hand-picked styles and products aligned with your browsing pattern:</p>
+
+                <div class="list-group list-group-flush">
+                    {% for p in recommendations %}
+                    <a href="{{ url_for('shop.product_detail', product_id=p.id) }}" class="list-group-item list-group-item-action px-0 d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="{{ p.image_url }}" alt="{{ p.name }}" class="rounded" style="width: 40px; height: 40px; object-fit: cover;" onerror="this.src='https://placehold.co/80x80/eaf9fc/164e5a?text=Item'">
+                            <div>
+                                <span class="fw-semibold text-dark small d-block">{{ p.name }}</span>
+                                <small class="text-muted">{{ p.subcategory }}</small>
+                            </div>
+                        </div>
+                        <span class="fw-bold text-dark small">₹{{ "%.2f"|format(p.price) }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+
+                <div class="mt-auto pt-3">
+                    <a href="{{ url_for('shop.index') }}" class="btn btn-outline-custom w-100">
+                        <i class="bi bi-bag me-1"></i> Continue Shopping
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

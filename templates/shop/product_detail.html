@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} - Customer Segmentation{% endblock %}
+
+{% block content %}
+<div class="row g-4 my-2">
+    <!-- Breadcrumb -->
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('shop.index') }}" class="text-info text-decoration-none">Shop</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('shop.index', category=product.category.slug) }}" class="text-info text-decoration-none">{{ product.category.name }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ product.name }}</li>
+            </ol>
+        </nav>
+    </div>
+
+    <!-- Product Image -->
+    <div class="col-md-6">
+        <div class="card card-custom p-3">
+            <img src="{{ product.image_url }}" class="img-fluid rounded-3" alt="{{ product.name }}" style="max-height: 480px; object-fit: cover; width: 100%;" onerror="this.src='https://placehold.co/600x600/eaf9fc/164e5a?text={{ product.subcategory }}'">
+        </div>
+    </div>
+
+    <!-- Product Info & Actions -->
+    <div class="col-md-6">
+        <div class="card card-custom p-4 h-100 d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-light text-info border px-3 py-1">{{ product.category.name }} &bull; {{ product.subcategory }}</span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1">
+                    <i class="bi bi-check2-circle me-1"></i> In Stock ({{ product.stock }})
+                </span>
+            </div>
+
+            <h2 class="fw-bold text-dark mb-2">{{ product.name }}</h2>
+            <div class="display-6 fw-bold text-dark mb-3">₹{{ "%.2f"|format(product.price) }}</div>
+
+            <p class="text-muted lead fs-6 mb-4">
+                {{ product.description }}
+            </p>
+
+            <div class="alert alert-info py-2 px-3 small mb-4">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                <strong>Behavioral Tracking Active:</strong> Viewing this item was logged as a <code>PRODUCT_VIEW</code> event and contributes to your behavioral profile.
+            </div>
+
+            <!-- Add to Cart / Wishlist Form -->
+            <form method="POST" action="{{ url_for('shop.add_to_cart', product_id=product.id) }}" class="mt-auto">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-4 col-sm-3">
+                        <label for="quantity" class="form-label small fw-semibold">Quantity</label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" value="1" min="1" max="{{ product.stock }}">
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary-custom flex-grow-1 py-2 fs-6">
+                        <i class="bi bi-cart-plus me-2"></i> Add to Cart
+                    </button>
+                    <button type="submit" formaction="{{ url_for('shop.toggle_wishlist', product_id=product.id) }}" class="btn btn-outline-custom px-3 py-2" title="Wishlist">
+                        <i class="bi {% if is_in_wishlist %}bi-heart-fill text-danger{% else %}bi-heart{% endif %} fs-5"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Related Products -->
+{% if related_products %}
+<div class="mt-5">
+    <h4 class="fw-bold text-dark mb-3">You May Also Like</h4>
+    <div class="row g-3">
+        {% for rel in related_products %}
+        <div class="col-sm-6 col-md-3">
+            <div class="card card-custom h-100">
+                <a href="{{ url_for('shop.product_detail', product_id=rel.id) }}">
+                    <img src="{{ rel.image_url }}" class="card-img-top product-card-img" alt="{{ rel.name }}" style="height: 160px;" onerror="this.src='https://placehold.co/400x300/eaf9fc/164e5a?text={{ rel.subcategory }}'">
+                </a>
+                <div class="card-body p-3 d-flex flex-column">
+                    <h6 class="fw-bold text-dark mb-1 small text-truncate">{{ rel.name }}</h6>
+                    <div class="d-flex justify-content-between align-items-center mt-auto pt-2">
+                        <span class="fw-bold text-dark small">₹{{ "%.2f"|format(rel.price) }}</span>
+                        <a href="{{ url_for('shop.product_detail', product_id=rel.id) }}" class="btn btn-sm btn-outline-custom py-0 px-2 small">View</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

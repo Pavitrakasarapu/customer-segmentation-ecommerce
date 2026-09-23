@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Shop - Customer Segmentation E-Commerce{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-banner">
+    <div class="row align-items-center">
+        <div class="col-lg-12">
+            <span class="badge bg-white text-info fw-bold mb-2 px-3 py-1 border">REAL-TIME BEHAVIORAL AI</span>
+            <h1 class="display-6 fw-bold text-dark mb-2">CUSTOMER SEGMENTATION</h1>
+            <p class="lead text-muted fs-6 mb-3">
+                Experience real-time behavioral segmentation. Every product view, search, cart update, and order instantly shapes your customer profile.
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{{ url_for('segmentation.index') }}" class="btn btn-primary-custom px-4 py-2">
+                    <i class="bi bi-broadcast me-1"></i> Live Segmentation Board
+                </a>
+                <a href="{{ url_for('segmentation.my_segment') }}" class="btn btn-outline-custom px-4 py-2">
+                    <i class="bi bi-person-lines-fill me-1"></i> My Segment Profile
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Category Filters -->
+<div class="card card-custom p-3 mb-4">
+    <div class="row g-3 align-items-center">
+        <!-- Search bar -->
+        <div class="col-md-5">
+            <form method="GET" action="{{ url_for('shop.index') }}" class="input-group">
+                {% if selected_category %}
+                <input type="hidden" name="category" value="{{ selected_category.slug }}">
+                {% endif %}
+                <input type="text" name="q" class="form-control" placeholder="Search products, brands, styles..." value="{{ query or '' }}">
+                <button class="btn btn-primary-custom" type="submit">
+                    <i class="bi bi-search"></i>
+                </button>
+            </form>
+        </div>
+
+        <!-- Category Pills -->
+        <div class="col-md-7">
+            <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                <a href="{{ url_for('shop.index', q=query) }}" class="btn btn-sm {% if not selected_category %}btn-primary-custom{% else %}btn-outline-secondary{% endif %}">
+                    All Categories
+                </a>
+                {% for cat in categories %}
+                <a href="{{ url_for('shop.index', category=cat.slug, q=query) }}" class="btn btn-sm {% if selected_category and selected_category.id == cat.id %}btn-primary-custom{% else %}btn-outline-secondary{% endif %}">
+                    <i class="bi {{ cat.icon }} me-1"></i> {{ cat.name }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Product Results Heading -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="fw-bold text-dark mb-0">
+        {% if selected_category %}
+            {{ selected_category.name }} Products
+        {% elif query %}
+            Search results for "{{ query }}"
+        {% else %}
+            Featured Catalog
+        {% endif %}
+        <span class="badge bg-light text-dark border ms-2">{{ products|length }} items</span>
+    </h5>
+</div>
+
+<!-- Product Grid -->
+<div class="row g-4">
+    {% for prod in products %}
+    <div class="col-sm-6 col-md-4 col-lg-3">
+        <div class="card card-custom h-100 position-relative">
+            <!-- Wishlist Heart Button -->
+            <form method="POST" action="{{ url_for('shop.toggle_wishlist', product_id=prod.id) }}" class="position-absolute top-0 end-0 m-2" style="z-index: 2;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-light rounded-circle shadow-sm border" title="Wishlist">
+                    <i class="bi {% if prod.id in wishlist_product_ids %}bi-heart-fill text-danger{% else %}bi-heart text-muted{% endif %}"></i>
+                </button>
+            </form>
+
+            <!-- Product Image -->
+            <a href="{{ url_for('shop.product_detail', product_id=prod.id) }}" class="text-decoration-none">
+                <img src="{{ prod.image_url }}" class="card-img-top product-card-img" alt="{{ prod.name }}" loading="lazy" onerror="this.src='https://placehold.co/400x300/eaf9fc/164e5a?text={{ prod.subcategory }}'">
+            </a>
+
+            <!-- Card Body -->
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="badge bg-light text-muted border small">{{ prod.subcategory }}</span>
+                    <span class="small text-success"><i class="bi bi-check-circle"></i> In Stock ({{ prod.stock }})</span>
+                </div>
+                <h6 class="card-title fw-bold text-dark mb-1">
+                    <a href="{{ url_for('shop.product_detail', product_id=prod.id) }}" class="text-decoration-none text-dark">
+                        {{ prod.name }}
+                    </a>
+                </h6>
+                <p class="card-text text-muted small flex-grow-1 mb-2">
+                    {{ (prod.description or '')|truncate(65) }}
+                </p>
+
+                <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
+                    <span class="product-price">₹{{ "%.2f"|format(prod.price) }}</span>
+                    <form method="POST" action="{{ url_for('shop.add_to_cart', product_id=prod.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="quantity" value="1">
+                        <button type="submit" class="btn btn-sm btn-primary-custom px-3">
+                            <i class="bi bi-cart-plus me-1"></i> Add
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12 text-center py-5">
+        <i class="bi bi-search fs-1 text-muted d-block mb-3"></i>
+        <h5 class="fw-bold text-dark">No products found</h5>
+        <p class="text-muted">Try clearing your filters or search for another item.</p>
+        <a href="{{ url_for('shop.index') }}" class="btn btn-primary-custom mt-2">View All Products</a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

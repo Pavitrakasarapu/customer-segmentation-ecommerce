@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Customer Segmentation{% endblock %}
+
+{% block content %}
+<div class="my-3">
+    <!-- Admin Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <div>
+            <span class="badge bg-warning text-dark px-3 py-1 mb-1">ADMINISTRATOR PORTAL</span>
+            <h2 class="fw-bold text-dark mb-0">Executive Analytics & Segmentation Dashboard</h2>
+        </div>
+        <div class="d-flex gap-2 mt-2 mt-md-0">
+            <form method="POST" action="{{ url_for('admin.retrain') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-primary" title="Trigger full KMeans retraining on customer data">
+                    <i class="bi bi-cpu me-1"></i> Retrain Model
+                </button>
+            </form>
+            <a href="{{ url_for('admin.customers') }}" class="btn btn-primary-custom">
+                <i class="bi bi-people me-1"></i> View Customers
+            </a>
+            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger" title="Log out from administrator session">
+                <i class="bi bi-box-arrow-right me-1"></i> Logout
+            </a>
+        </div>
+    </div>
+
+    <!-- Core KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-custom p-3 border-start border-4 border-info">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <small class="text-muted text-uppercase fw-bold">Total Customers</small>
+                        <h3 class="fw-bold text-dark mb-0">{{ total_customers }}</h3>
+                    </div>
+                    <div class="p-2 bg-light rounded text-info fs-3">
+                        <i class="bi bi-people"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-custom p-3 border-start border-4 border-success">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <small class="text-muted text-uppercase fw-bold">Active Now</small>
+                        <h3 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <span class="pulse-indicator"></span> {{ active_customers }}
+                        </h3>
+                    </div>
+                    <div class="p-2 bg-light rounded text-success fs-3">
+                        <i class="bi bi-broadcast"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-custom p-3 border-start border-4 border-primary">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <small class="text-muted text-uppercase fw-bold">Total Orders</small>
+                        <h3 class="fw-bold text-dark mb-0">{{ total_orders }}</h3>
+                    </div>
+                    <div class="p-2 bg-light rounded text-primary fs-3">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-custom p-3 border-start border-4 border-warning">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <small class="text-muted text-uppercase fw-bold">Total Revenue</small>
+                        <h3 class="fw-bold text-dark mb-0">₹{{ "%.2f"|format(total_revenue) }}</h3>
+                    </div>
+                    <div class="p-2 bg-light rounded text-warning fs-3">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Segment Breakdown KPI Row -->
+    <div class="row g-2 mb-4 text-center">
+        <div class="col">
+            <div class="card card-custom p-2 border-top border-4 border-success">
+                <small class="text-muted small fw-bold">HIGH VALUE</small>
+                <h4 class="fw-bold text-dark mb-0">{{ segment_counts.get('HIGH VALUE CUSTOMER', 0) }}</h4>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card card-custom p-2 border-top border-4 border-info">
+                <small class="text-muted small fw-bold">REGULAR</small>
+                <h4 class="fw-bold text-dark mb-0">{{ segment_counts.get('REGULAR CUSTOMER', 0) }}</h4>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card card-custom p-2 border-top border-4 border-primary">
+                <small class="text-muted small fw-bold">NEW</small>
+                <h4 class="fw-bold text-dark mb-0">{{ segment_counts.get('NEW CUSTOMER', 0) }}</h4>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card card-custom p-2 border-top border-4 border-danger">
+                <small class="text-muted small fw-bold">AT-RISK</small>
+                <h4 class="fw-bold text-dark mb-0">{{ segment_counts.get('AT-RISK CUSTOMER', 0) }}</h4>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card card-custom p-2 border-top border-4 border-warning">
+                <small class="text-muted small fw-bold">DISCOUNT SEEKER</small>
+                <h4 class="fw-bold text-dark mb-0">{{ segment_counts.get('DISCOUNT SEEKER', 0) }}</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js Visualizations Grid -->
+    <div class="row g-4 mb-4">
+        <!-- Segment Distribution (Doughnut) -->
+        <div class="col-lg-4">
+            <div class="card card-custom p-3 h-100">
+                <h6 class="fw-bold text-dark mb-3">Segment Distribution</h6>
+                <div style="position: relative; height: 260px;">
+                    <canvas id="segmentDistChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Revenue by Segment (Bar) -->
+        <div class="col-lg-4">
+            <div class="card card-custom p-3 h-100">
+                <h6 class="fw-bold text-dark mb-3">Revenue by Segment (₹)</h6>
+                <div style="position: relative; height: 260px;">
+                    <canvas id="revenueSegmentChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orders by Segment (Bar) -->
+        <div class="col-lg-4">
+            <div class="card card-custom p-3 h-100">
+                <h6 class="fw-bold text-dark mb-3">Orders by Segment</h6>
+                <div style="position: relative; height: 260px;">
+                    <canvas id="ordersSegmentChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Over Time (Line) -->
+        <div class="col-lg-7">
+            <div class="card card-custom p-3 h-100">
+                <h6 class="fw-bold text-dark mb-3">Customer Activities Over Last 7 Days</h6>
+                <div style="position: relative; height: 260px;">
+                    <canvas id="activityTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Popularity (Bar) -->
+        <div class="col-lg-5">
+            <div class="card card-custom p-3 h-100">
+                <h6 class="fw-bold text-dark mb-3">Category Engagement</h6>
+                <div style="position: relative; height: 260px;">
+                    <canvas id="categoryPopularityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Customers & Recent Activity Feed -->
+    <div class="row g-4">
+        <!-- Live Active Customers Table -->
+        <div class="col-lg-6">
+            <div class="card card-custom p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <span class="pulse-indicator me-1"></span> Live Active Customers (Admin View)
+                    </h6>
+                    <span class="badge bg-success-subtle text-success">{{ live_customers|length }} Active</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr class="small text-muted">
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Segment</th>
+                                <th>Active Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in live_customers %}
+                            <tr>
+                                <td class="fw-semibold text-dark">
+                                    <a href="{{ url_for('admin.customer_detail', user_id=c.user.id) }}" class="text-decoration-none text-dark">
+                                        {{ c.user.name }}
+                                    </a>
+                                </td>
+                                <td class="small text-muted">{{ c.user.email }}</td>
+                                <td>
+                                    <span class="badge bg-{{ c.badge_color }} small">{{ c.segment }}</span>
+                                </td>
+                                <td class="small text-muted">{{ c.last_active }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">No customers currently active</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity Audit Feed -->
+        <div class="col-lg-6">
+            <div class="card card-custom p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-dark mb-0">Latest Customer Events</h6>
+                    <a href="{{ url_for('admin.activities') }}" class="btn btn-sm btn-outline-custom">View All Logs</a>
+                </div>
+                <div class="list-group list-group-flush small">
+                    {% for act in recent_activities %}
+                    <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-light text-dark border me-1">{{ act.activity_type }}</span>
+                            <span class="fw-semibold text-dark">{{ act.customer_name }}</span>
+                            {% if act.product %}
+                            <small class="text-muted d-block">{{ act.product.name }}</small>
+                            {% endif %}
+                        </div>
+                        <span class="text-muted small">{{ act.created_at.strftime('%H:%M:%S') }}</span>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-3">No activity logs recorded yet</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const chartData = {{ chart_data|tojson }};
+
+// 1. Segment Distribution
+new Chart(document.getElementById('segmentDistChart'), {
+    type: 'doughnut',
+    data: {
+        labels: chartData.segment_labels,
+        datasets: [{
+            data: chartData.segment_counts,
+            backgroundColor: ['#10B981', '#0EA5E9', '#6366F1', '#EF4444', '#F59E0B'],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+    }
+});
+
+// 2. Revenue by Segment
+new Chart(document.getElementById('revenueSegmentChart'), {
+    type: 'bar',
+    data: {
+        labels: chartData.segment_labels.map(l => l.replace(' CUSTOMER', '')),
+        datasets: [{
+            label: 'Revenue (₹)',
+            data: chartData.revenue_by_segment,
+            backgroundColor: '#29BAD9',
+            borderRadius: 6
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } }
+    }
+});
+
+// 3. Orders by Segment
+new Chart(document.getElementById('ordersSegmentChart'), {
+    type: 'bar',
+    data: {
+        labels: chartData.segment_labels.map(l => l.replace(' CUSTOMER', '')),
+        datasets: [{
+            label: 'Orders',
+            data: chartData.orders_by_segment,
+            backgroundColor: '#164E5A',
+            borderRadius: 6
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+});
+
+// 4. Activity Over Time
+new Chart(document.getElementById('activityTrendChart'), {
+    type: 'line',
+    data: {
+        labels: chartData.activity_dates,
+        datasets: [{
+            label: 'Events Recorded',
+            data: chartData.activity_counts,
+            borderColor: '#29BAD9',
+            backgroundColor: 'rgba(41, 186, 217, 0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+});
+
+// 5. Category Engagement
+new Chart(document.getElementById('categoryPopularityChart'), {
+    type: 'bar',
+    data: {
+        labels: chartData.category_labels,
+        datasets: [{
+            label: 'Events',
+            data: chartData.category_views,
+            backgroundColor: ['#6366F1', '#0EA5E9', '#10B981', '#F59E0B'],
+            borderRadius: 6
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } }
+    }
+});
+</script>
+{% endblock %}
