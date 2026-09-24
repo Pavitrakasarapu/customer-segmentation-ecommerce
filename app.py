@@ -93,9 +93,11 @@ def create_app(config_name: str = None) -> Flask:
     def handle_csrf_error(e):
         return render_template("errors/csrf_error.html", reason=e.description), 400
 
-    # Ensure DB tables exist on initial boot
+    # Ensure DB tables exist on initial boot and schema migrations are applied additively
     with app.app_context():
         db.create_all()
+        from models.product import ensure_product_schema
+        ensure_product_schema()
 
     return app
 

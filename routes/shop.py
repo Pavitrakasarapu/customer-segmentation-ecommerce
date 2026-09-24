@@ -19,11 +19,21 @@ def index():
     if current_user.is_admin:
         return redirect(url_for("admin.dashboard"))
 
+    page = request.args.get("page", 1, type=int)
+    per_page = 24
     query = request.args.get("q", "").strip()
     category_slug = request.args.get("category", "").strip().lower()
     subcategory = request.args.get("subcategory", "").strip()
+    brand = request.args.get("brand", "").strip()
+    sort = request.args.get("sort", "featured").strip().lower()
 
-    categories = Category.query.all()
+    # Optional price, rating, discount filters
+    min_price = request.args.get("min_price", type=float)
+    max_price = request.args.get("max_price", type=float)
+    min_rating = request.args.get("min_rating", type=float)
+    min_discount = request.args.get("min_discount", type=int)
+
+    categories = Category.query.order_by(Category.id.asc()).all()
     products_query = Product.query
 
     selected_category = None
@@ -36,17 +46,63 @@ def index():
     if subcategory:
         products_query = products_query.filter(Product.subcategory.ilike(f"%{subcategory}%"))
 
+    if brand:
+        products_query = products_query.filter(Product.brand.ilike(f"%{brand}%"))
+
+    if min_price is not None:
+        products_query = products_query.filter(Product.price >= min_price)
+    if max_price is not None:
+        products_query = products_query.filter(Product.price <= max_price)
+
+    if min_rating is not None:
+        products_query = products_query.filter(Product.rating >= min_rating)
+
+    if min_discount is not None:
+        products_query = products_query.filter(Product.discount >= min_discount)
+
     if query:
+        search_terms = f"%{query}%"
         products_query = products_query.filter(
             db.or_(
-                Product.name.ilike(f"%{query}%"),
-                Product.description.ilike(f"%{query}%"),
-                Product.subcategory.ilike(f"%{query}%")
+                Product.name.ilike(search_terms),
+                Product.description.ilike(search_terms),
+                Product.subcategory.ilike(search_terms),
+                Product.brand.ilike(search_terms),
+                Product.tags.ilike(search_terms),
+                Product.sku.ilike(search_terms)
             )
         )
         CustomerActivity.log("SEARCH", user=current_user, metadata={"query": query})
 
-    products = products_query.order_by(Product.id.asc()).all()
+    # Sorting
+    if sort == "price_asc":
+        products_query = products_query.order_by(Product.price.asc(), Product.id.asc())
+    elif sort == "price_desc":
+        products_query = products_query.order_by(Product.price.desc(), Product.id.asc())
+    elif sort == "rating_desc":
+        products_query = products_query.order_by(Product.rating.desc(), Product.id.asc())
+    elif sort == "discount_desc":
+        products_query = products_query.order_by(Product.discount.desc(), Product.id.asc())
+    elif sort == "newest":
+        products_query = products_query.order_by(Product.created_at.desc(), Product.id.desc())
+    else:
+        # featured / default
+        products_query = products_query.order_by(Product.id.asc())
+
+    # Server-side pagination
+    pagination = products_query.paginate(page=page, per_page=per_page, error_out=False)
+    products = pagination.items
+
+    # Collect available subcategories and brands for dynamic filter sidebar
+    if selected_category:
+        subcat_tuples = db.session.query(Product.subcategory).filter_by(category_id=selected_category.id).distinct().all()
+        brand_tuples = db.session.query(Product.brand).filter_by(category_id=selected_category.id).filter(Product.brand.isnot(None)).distinct().all()
+    else:
+        subcat_tuples = db.session.query(Product.subcategory).distinct().all()
+        brand_tuples = db.session.query(Product.brand).filter(Product.brand.isnot(None)).distinct().all()
+
+    available_subcategories = sorted([s[0] for s in subcat_tuples if s[0]])
+    available_brands = sorted([b[0] for b in brand_tuples if b[0]])[:30]
 
     # User's current wishlist product IDs for easy UI heart toggles
     wishlist_product_ids = {
@@ -56,10 +112,19 @@ def index():
     return render_template(
         "shop/index.html",
         products=products,
+        pagination=pagination,
         categories=categories,
         selected_category=selected_category,
         query=query,
         subcategory=subcategory,
+        brand=brand,
+        min_price=min_price,
+        max_price=max_price,
+        min_rating=min_rating,
+        min_discount=min_discount,
+        sort=sort,
+        available_subcategories=available_subcategories,
+        available_brands=available_brands,
         wishlist_product_ids=wishlist_product_ids
     )
 
@@ -82,8 +147,14 @@ def product_detail(product_id: int):
     is_in_wishlist = WishlistItem.query.filter_by(user_id=current_user.id, product_id=product.id).first() is not None
     related_products = Product.query.filter(
         Product.category_id == product.category_id,
+        Product.subcategory == product.subcategory,
         Product.id != product.id
     ).limit(4).all()
+    if not related_products:
+        related_products = Product.query.filter(
+            Product.category_id == product.category_id,
+            Product.id != product.id
+        ).limit(4).all()
 
     return render_template(
         "shop/product_detail.html",

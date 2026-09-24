@@ -4,13 +4,13 @@
 
 {% block content %}
 <!-- Hero Section -->
-<div class="hero-banner">
+<div class="hero-banner mb-4">
     <div class="row align-items-center">
         <div class="col-lg-12">
             <span class="badge bg-white text-info fw-bold mb-2 px-3 py-1 border">REAL-TIME BEHAVIORAL AI</span>
-            <h1 class="display-6 fw-bold text-dark mb-2">CUSTOMER SEGMENTATION</h1>
+            <h1 class="display-6 fw-bold text-dark mb-2">CUSTOMER SEGMENTATION CATALOG</h1>
             <p class="lead text-muted fs-6 mb-3">
-                Experience real-time behavioral segmentation. Every product view, search, cart update, and order instantly shapes your customer profile.
+                Explore over 3,000 curated products across 25 subcategories. Every search, filter, view, and order actively refines your customer profile.
             </p>
             <div class="d-flex flex-wrap gap-2">
                 <a href="{{ url_for('segmentation.index') }}" class="btn btn-primary-custom px-4 py-2">
@@ -24,16 +24,17 @@
     </div>
 </div>
 
-<!-- Search and Category Filters -->
-<div class="card card-custom p-3 mb-4">
+<!-- Search and Category Navigation -->
+<div class="card card-custom p-3 mb-3 shadow-sm border-0">
     <div class="row g-3 align-items-center">
         <!-- Search bar -->
-        <div class="col-md-5">
+        <div class="col-lg-5">
             <form method="GET" action="{{ url_for('shop.index') }}" class="input-group">
-                {% if selected_category %}
-                <input type="hidden" name="category" value="{{ selected_category.slug }}">
-                {% endif %}
-                <input type="text" name="q" class="form-control" placeholder="Search products, brands, styles..." value="{{ query or '' }}">
+                {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category.slug }}">{% endif %}
+                {% if subcategory %}<input type="hidden" name="subcategory" value="{{ subcategory }}">{% endif %}
+                {% if brand %}<input type="hidden" name="brand" value="{{ brand }}">{% endif %}
+                {% if sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+                <input type="text" name="q" class="form-control" placeholder="Search by product, brand, style, tag..." value="{{ query or '' }}">
                 <button class="btn btn-primary-custom" type="submit">
                     <i class="bi bi-search"></i>
                 </button>
@@ -41,40 +42,134 @@
         </div>
 
         <!-- Category Pills -->
-        <div class="col-md-7">
-            <div class="d-flex flex-wrap gap-2 justify-content-md-end">
-                <a href="{{ url_for('shop.index', q=query) }}" class="btn btn-sm {% if not selected_category %}btn-primary-custom{% else %}btn-outline-secondary{% endif %}">
+        <div class="col-lg-7">
+            <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+                <a href="{{ url_for('shop.index', q=query, sort=sort) }}" class="btn btn-sm {% if not selected_category %}btn-primary-custom{% else %}btn-outline-secondary{% endif %}">
                     All Categories
                 </a>
                 {% for cat in categories %}
-                <a href="{{ url_for('shop.index', category=cat.slug, q=query) }}" class="btn btn-sm {% if selected_category and selected_category.id == cat.id %}btn-primary-custom{% else %}btn-outline-secondary{% endif %}">
+                <a href="{{ url_for('shop.index', category=cat.slug, q=query, sort=sort) }}" class="btn btn-sm {% if selected_category and selected_category.id == cat.id %}btn-primary-custom{% else %}btn-outline-secondary{% endif %}">
                     <i class="bi {{ cat.icon }} me-1"></i> {{ cat.name }}
                 </a>
                 {% endfor %}
             </div>
         </div>
     </div>
+
+    <!-- Subcategory Pills (when category is selected or available) -->
+    {% if available_subcategories and (selected_category or subcategory) %}
+    <div class="border-top mt-3 pt-2 d-flex flex-wrap align-items-center gap-2">
+        <span class="small fw-bold text-muted me-1">Subcategories:</span>
+        <a href="{{ url_for('shop.index', category=selected_category.slug if selected_category else '', q=query, sort=sort) }}"
+           class="badge text-decoration-none {% if not subcategory %}bg-dark text-white{% else %}bg-light text-dark border{% endif %} px-2 py-1">
+            All
+        </a>
+        {% for sc in available_subcategories %}
+        <a href="{{ url_for('shop.index', category=selected_category.slug if selected_category else '', subcategory=sc, q=query, sort=sort) }}"
+           class="badge text-decoration-none {% if subcategory and subcategory|lower == sc|lower %}bg-primary text-white{% else %}bg-light text-dark border{% endif %} px-2 py-1">
+            {{ sc }}
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
 </div>
 
-<!-- Product Results Heading -->
+<!-- Refined Filters & Sorting Toolbar -->
+<div class="card card-custom p-3 mb-4 shadow-sm border-0">
+    <form method="GET" action="{{ url_for('shop.index') }}" class="row g-2 align-items-end">
+        {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category.slug }}">{% endif %}
+        {% if subcategory %}<input type="hidden" name="subcategory" value="{{ subcategory }}">{% endif %}
+        {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+
+        <!-- Sort By -->
+        <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label small text-muted mb-1 fw-semibold"><i class="bi bi-arrow-down-up me-1"></i> Sort By</label>
+            <select name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="featured" {% if sort == 'featured' %}selected{% endif %}>Featured</option>
+                <option value="price_asc" {% if sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+                <option value="price_desc" {% if sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+                <option value="rating_desc" {% if sort == 'rating_desc' %}selected{% endif %}>Highest Rated</option>
+                <option value="discount_desc" {% if sort == 'discount_desc' %}selected{% endif %}>Biggest Discount</option>
+                <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest</option>
+            </select>
+        </div>
+
+        <!-- Brand Filter -->
+        <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label small text-muted mb-1 fw-semibold"><i class="bi bi-tag me-1"></i> Brand</label>
+            <select name="brand" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">All Brands</option>
+                {% for b in available_brands %}
+                <option value="{{ b }}" {% if brand == b %}selected{% endif %}>{{ b }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Rating Filter -->
+        <div class="col-6 col-md-2 col-lg-2">
+            <label class="form-label small text-muted mb-1 fw-semibold"><i class="bi bi-star-fill text-warning me-1"></i> Rating</label>
+            <select name="min_rating" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">Any Rating</option>
+                <option value="4.5" {% if min_rating and min_rating == 4.5 %}selected{% endif %}>4.5★ & above</option>
+                <option value="4.0" {% if min_rating and min_rating == 4.0 %}selected{% endif %}>4.0★ & above</option>
+            </select>
+        </div>
+
+        <!-- Discount Filter -->
+        <div class="col-6 col-md-2 col-lg-2">
+            <label class="form-label small text-muted mb-1 fw-semibold"><i class="bi bi-percent me-1"></i> Discount</label>
+            <select name="min_discount" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">All Discounts</option>
+                <option value="10" {% if min_discount and min_discount == 10 %}selected{% endif %}>10% or more</option>
+                <option value="20" {% if min_discount and min_discount == 20 %}selected{% endif %}>20% or more</option>
+                <option value="30" {% if min_discount and min_discount == 30 %}selected{% endif %}>30% or more</option>
+            </select>
+        </div>
+
+        <!-- Price Range -->
+        <div class="col-8 col-md-4 col-lg-3">
+            <label class="form-label small text-muted mb-1 fw-semibold"><i class="bi bi-currency-rupee me-1"></i> Price Range</label>
+            <div class="input-group input-group-sm">
+                <input type="number" name="min_price" class="form-control" placeholder="Min" value="{{ min_price if min_price is not none else '' }}">
+                <span class="input-group-text">-</span>
+                <input type="number" name="max_price" class="form-control" placeholder="Max" value="{{ max_price if max_price is not none else '' }}">
+                <button class="btn btn-outline-primary" type="submit">Go</button>
+            </div>
+        </div>
+
+        <!-- Reset Button -->
+        <div class="col-4 col-md-2 col-lg-1 text-end">
+            <a href="{{ url_for('shop.index', category=selected_category.slug if selected_category else '') }}" class="btn btn-sm btn-outline-danger w-100" title="Clear Filters">
+                <i class="bi bi-x-circle"></i> Reset
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Product Results Heading & Count -->
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="fw-bold text-dark mb-0">
-        {% if selected_category %}
-            {{ selected_category.name }} Products
-        {% elif query %}
-            Search results for "{{ query }}"
-        {% else %}
-            Featured Catalog
-        {% endif %}
-        <span class="badge bg-light text-dark border ms-2">{{ products|length }} items</span>
-    </h5>
+    <div>
+        <h5 class="fw-bold text-dark mb-0">
+            {% if selected_category and subcategory %}
+                {{ selected_category.name }} &bull; {{ subcategory }}
+            {% elif selected_category %}
+                {{ selected_category.name }} Products
+            {% elif query %}
+                Search results for "{{ query }}"
+            {% else %}
+                Featured Catalog
+            {% endif %}
+            <span class="badge bg-light text-dark border ms-2">{{ pagination.total }} items</span>
+        </h5>
+        <small class="text-muted">Showing page {{ pagination.page }} of {{ pagination.pages or 1 }} (24 products per page)</small>
+    </div>
 </div>
 
 <!-- Product Grid -->
 <div class="row g-4">
     {% for prod in products %}
     <div class="col-sm-6 col-md-4 col-lg-3">
-        <div class="card card-custom h-100 position-relative">
+        <div class="card card-custom h-100 position-relative shadow-sm">
             <!-- Wishlist Heart Button -->
             <form method="POST" action="{{ url_for('shop.toggle_wishlist', product_id=prod.id) }}" class="position-absolute top-0 end-0 m-2" style="z-index: 2;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -89,22 +184,38 @@
             </a>
 
             <!-- Card Body -->
-            <div class="card-body d-flex flex-column">
+            <div class="card-body d-flex flex-column p-3">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <span class="badge bg-light text-muted border small">{{ prod.subcategory }}</span>
-                    <span class="small text-success"><i class="bi bi-check-circle"></i> In Stock ({{ prod.stock }})</span>
+                    {% if prod.rating %}
+                    <span class="badge bg-warning-subtle text-dark border border-warning small">
+                        <i class="bi bi-star-fill text-warning"></i> {{ "%.1f"|format(prod.rating) }}
+                    </span>
+                    {% endif %}
                 </div>
-                <h6 class="card-title fw-bold text-dark mb-1">
+
+                {% if prod.brand %}
+                <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.5px;">{{ prod.brand }}</div>
+                {% endif %}
+
+                <h6 class="card-title fw-bold text-dark mb-1 mt-1 text-truncate" title="{{ prod.name }}">
                     <a href="{{ url_for('shop.product_detail', product_id=prod.id) }}" class="text-decoration-none text-dark">
                         {{ prod.name }}
                     </a>
                 </h6>
+
                 <p class="card-text text-muted small flex-grow-1 mb-2">
-                    {{ (prod.description or '')|truncate(65) }}
+                    {{ (prod.description or '')|truncate(60) }}
                 </p>
 
                 <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
-                    <span class="product-price">₹{{ "%.2f"|format(prod.price) }}</span>
+                    <div>
+                        <span class="product-price fw-bold text-dark">₹{{ "%.2f"|format(prod.price) }}</span>
+                        {% if prod.discount and prod.discount > 0 %}
+                        <span class="text-muted text-decoration-line-through small ms-1" style="font-size: 0.75rem;">₹{{ "%.2f"|format(prod.original_price) }}</span>
+                        <span class="badge bg-success-subtle text-success small ms-1">{{ prod.discount }}% OFF</span>
+                        {% endif %}
+                    </div>
                     <form method="POST" action="{{ url_for('shop.add_to_cart', product_id=prod.id) }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="quantity" value="1">
@@ -120,9 +231,58 @@
     <div class="col-12 text-center py-5">
         <i class="bi bi-search fs-1 text-muted d-block mb-3"></i>
         <h5 class="fw-bold text-dark">No products found</h5>
-        <p class="text-muted">Try clearing your filters or search for another item.</p>
+        <p class="text-muted">Try clearing your filters or search for another keyword.</p>
         <a href="{{ url_for('shop.index') }}" class="btn btn-primary-custom mt-2">View All Products</a>
     </div>
     {% endfor %}
 </div>
+
+<!-- Server-Side Pagination Controls -->
+{% if pagination.pages > 1 %}
+<nav aria-label="Catalog Page Navigation" class="mt-5 mb-4">
+    <ul class="pagination justify-content-center flex-wrap">
+        <!-- Previous Page Link -->
+        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('shop.index', page=pagination.prev_num, category=selected_category.slug if selected_category else '', subcategory=subcategory, q=query, brand=brand, sort=sort, min_price=min_price, max_price=max_price, min_rating=min_rating, min_discount=min_discount) }}" aria-label="Previous">
+                <span aria-hidden="true">&laquo; Prev</span>
+            </a>
+        </li>
+
+        <!-- Window of Page Numbers -->
+        {% set start_page = [1, pagination.page - 3]|max %}
+        {% set end_page = [pagination.pages, pagination.page + 3]|min %}
+
+        {% if start_page > 1 %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('shop.index', page=1, category=selected_category.slug if selected_category else '', subcategory=subcategory, q=query, brand=brand, sort=sort, min_price=min_price, max_price=max_price, min_rating=min_rating, min_discount=min_discount) }}">1</a>
+        </li>
+        {% if start_page > 2 %}
+        <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+        {% endif %}
+        {% endif %}
+
+        {% for p in range(start_page, end_page + 1) %}
+        <li class="page-item {% if p == pagination.page %}active{% endif %}">
+            <a class="page-link" href="{{ url_for('shop.index', page=p, category=selected_category.slug if selected_category else '', subcategory=subcategory, q=query, brand=brand, sort=sort, min_price=min_price, max_price=max_price, min_rating=min_rating, min_discount=min_discount) }}">{{ p }}</a>
+        </li>
+        {% endfor %}
+
+        {% if end_page < pagination.pages %}
+        {% if end_page < pagination.pages - 1 %}
+        <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+        {% endif %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('shop.index', page=pagination.pages, category=selected_category.slug if selected_category else '', subcategory=subcategory, q=query, brand=brand, sort=sort, min_price=min_price, max_price=max_price, min_rating=min_rating, min_discount=min_discount) }}">{{ pagination.pages }}</a>
+        </li>
+        {% endif %}
+
+        <!-- Next Page Link -->
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('shop.index', page=pagination.next_num, category=selected_category.slug if selected_category else '', subcategory=subcategory, q=query, brand=brand, sort=sort, min_price=min_price, max_price=max_price, min_rating=min_rating, min_discount=min_discount) }}" aria-label="Next">
+                <span aria-hidden="true">Next &raquo;</span>
+            </a>
+        </li>
+    </ul>
+</nav>
+{% endif %}
 {% endblock %}
