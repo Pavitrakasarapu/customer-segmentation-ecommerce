@@ -9,6 +9,7 @@ Customer profiles, activities, orders, carts, wishlists, and segmentation
 are generated DYNAMICALLY as REAL users register, browse, and shop.
 No fake or synthetic customer analytics are seeded.
 """
+import os
 import sys
 from pathlib import Path
 from datetime import datetime
